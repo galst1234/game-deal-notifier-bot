@@ -1,8 +1,11 @@
 name: Ruff
 on: [ push, pull_request ]
 jobs:
-  ruff:
+  ruff-telegram-bot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
+        with:
+          src: 'telegram_bot'
+          version-file: 'telegram_bot/pyproject.toml'
