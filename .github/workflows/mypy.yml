@@ -5,7 +5,15 @@ on: [ push, pull_request ]
 jobs:
   mypy-telegram-bot:
     runs-on: ubuntu-latest
-
+    if: >
+      github.event_name == 'push' && github.event.head_commit && (
+        contains(join(github.event.head_commit.added, '\n'), 'telegram_bot/') ||
+        contains(join(github.event.head_commit.modified, '\n'), 'telegram_bot/') ||
+        contains(join(github.event.head_commit.removed, '\n'), 'telegram_bot/')
+      ) ||
+      github.event_name == 'pull_request' && (
+        contains(join(github.event.pull_request.changed_files, '\n'), 'telegram_bot/')
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,7 +30,15 @@ jobs:
 
   mypy-rest-api:
     runs-on: ubuntu-latest
-
+    if: >
+      github.event_name == 'push' && github.event.head_commit && (
+        contains(join(github.event.head_commit.added, '\n'), 'rest_api/') ||
+        contains(join(github.event.head_commit.modified, '\n'), 'rest_api/') ||
+        contains(join(github.event.head_commit.removed, '\n'), 'rest_api/')
+      ) ||
+      github.event_name == 'pull_request' && (
+        contains(join(github.event.pull_request.changed_files, '\n'), 'rest_api/')
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
