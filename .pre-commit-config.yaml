@@ -11,4 +11,10 @@ repos:
     rev: v1.19.1
     hooks:
       - id: mypy
+        name: mypy (rest_api)
+        exclude: "telegram_bot"
+        additional_dependencies: [ "types-requests~=2.32", "types-pytz~=2025.2" ]
+      - id: mypy
+        name: mypy (telegram_bot)
+        exclude: "rest_api"
         additional_dependencies: [ "types-requests~=2.32", "types-pytz~=2025.2" ]

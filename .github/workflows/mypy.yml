@@ -19,3 +19,20 @@ jobs:
       - name: Mypy
         working-directory: telegram_bot
         run: uv run --frozen mypy .
+
+  mypy-rest-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          pyproject-file: 'rest_api/pyproject.toml'
+
+      - name: Mypy
+        working-directory: rest_api
+        run: uv run --frozen mypy .

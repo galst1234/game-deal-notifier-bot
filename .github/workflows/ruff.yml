@@ -9,3 +9,12 @@ jobs:
         with:
           src: 'telegram_bot'
           version-file: 'telegram_bot/pyproject.toml'
+
+  ruff-rest-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          src: 'rest_api'
+          version-file: 'rest_api/pyproject.toml'
