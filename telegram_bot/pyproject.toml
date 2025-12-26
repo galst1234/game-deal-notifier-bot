@@ -7,7 +7,7 @@ authors = [
 ]
 dependencies = [
     "pydantic~=2.12",
-    "python-telegram-bot[job-queue]~=21.10",
+    "python-telegram-bot[job-queue]~=22.5",
     "pytz~=2025.2",
     "requests~=2.32",
 ]
