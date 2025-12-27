@@ -1,5 +1,5 @@
-from isthereanydeal.deals_list import DealItem, IsThereAnyDealDealsList, build_deals_url
-from utils.pagination import follow_pagination
+from api.isthereanydeal.deals_list import DealItem, IsThereAnyDealDealsList, build_deals_url
+from api.utils.pagination import follow_pagination
 
 
 def get_current_giveaways() -> list[DealItem]:

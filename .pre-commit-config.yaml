@@ -12,7 +12,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy (rest_api)
-        exclude: "telegram_bot"
+        exclude: "telegram_bot|.*/migrations/.*"
         additional_dependencies: [ "types-requests~=2.32", "types-pytz~=2025.2" ]
       - id: mypy
         name: mypy (telegram_bot)

@@ -4,8 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
+from api.utils.pagination import PaginatedResult
 from config import ISTHEREANYDEAL_API_KEY
-from utils.pagination import PaginatedResult
 
 
 class Assets(BaseModel):
