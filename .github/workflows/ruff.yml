@@ -1,17 +1,25 @@
 name: Ruff
 on: [ push, pull_request ]
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      telegram_bot: ${{ steps.filter.outputs.telegram_bot }}
+      rest_api: ${{ steps.filter.outputs.rest_api }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            telegram_bot:
+              - 'telegram_bot/**'
+            rest_api:
+              - 'rest_api/**'
   ruff-telegram-bot:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' && github.event.head_commit && (
-        contains(join(github.event.head_commit.added, '\n'), 'telegram_bot/') ||
-        contains(join(github.event.head_commit.modified, '\n'), 'telegram_bot/') ||
-        contains(join(github.event.head_commit.removed, '\n'), 'telegram_bot/')
-      ) ||
-      github.event_name == 'pull_request' && (
-        contains(join(github.event.pull_request.changed_files, '\n'), 'telegram_bot/')
-      )
+    if: needs.changes.outputs.telegram_bot == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
@@ -21,15 +29,7 @@ jobs:
 
   ruff-rest-api:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' && github.event.head_commit && (
-        contains(join(github.event.head_commit.added, '\n'), 'rest_api/') ||
-        contains(join(github.event.head_commit.modified, '\n'), 'rest_api/') ||
-        contains(join(github.event.head_commit.removed, '\n'), 'rest_api/')
-      ) ||
-      github.event_name == 'pull_request' && (
-        contains(join(github.event.pull_request.changed_files, '\n'), 'rest_api/')
-      )
+    if: needs.changes.outputs.rest_api == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
