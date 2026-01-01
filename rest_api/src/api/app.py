@@ -1,6 +1,5 @@
 import datetime
 
-import pytz
 from asgiref.sync import sync_to_async
 from django.db.models import Q
 from fastapi import FastAPI, Response
@@ -9,7 +8,6 @@ from pydantic import BaseModel
 from api.django_setup import setup_django
 from api.isthereanydeal.deals_list import DealItem
 from api.isthereanydeal.giveaways import get_current_giveaways
-from config import TIMEZONE
 
 setup_django()
 
@@ -76,21 +74,24 @@ def _get_pending_subscriptions() -> list[int]:
     with transaction.atomic():
         job, _ = Job.objects.get_or_create(name="subscriptions_job")
         last_run = job.last_run
-        now = datetime.datetime.now(tz=pytz.timezone(TIMEZONE))
-        if last_run <= now:
+        now = datetime.datetime.now(tz=datetime.UTC)
+
+        if last_run.time() <= now.time():
+            # Same day case: notification times between last_run and now
             pending_subscriptions = NotificationSubscription.objects.filter(
-                notification_time__gt=last_run.astimezone(pytz.timezone(TIMEZONE)).time(),
+                notification_time__gt=last_run.time(),
                 notification_time__lte=now.time(),
                 enabled=True,
             ).values_list("chat_id", flat=True)
         else:
-            # Handle day wrap-around
+            # Day wrap-around: notification times after last_run OR before now
             pending_subscriptions = (
                 NotificationSubscription.objects
                 .filter(enabled=True)
                 .filter(Q(notification_time__gt=last_run.time()) | Q(notification_time__lte=now.time()))
                 .values_list("chat_id", flat=True)
             )
+
         job.last_run = now
         job.save()
     return list(pending_subscriptions)

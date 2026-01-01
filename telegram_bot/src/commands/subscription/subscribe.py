@@ -1,17 +1,16 @@
 import datetime
 import logging
 
-import pytz
 import requests
 from telegram import LinkPreviewOptions, Update
 from telegram.ext import CallbackContext, CommandHandler, ContextTypes
 
-from config import BACKEND_URL, TIMEZONE
+from config import BACKEND_URL
 from isthereanydeal.giveaways import get_current_giveaways
 from isthereanydeal.utils import format_deals_list
 from utils import validate_allowed_chats_async
 
-NOTIFICATION_TIME = datetime.time(9, 0, tzinfo=pytz.timezone(TIMEZONE))
+NOTIFICATION_TIME = datetime.time(7, 0, tzinfo=datetime.UTC)
 
 logger = logging.getLogger(__name__)
 
