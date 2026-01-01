@@ -2,18 +2,16 @@ import datetime
 import logging
 
 import pytz
+import requests
 from telegram import LinkPreviewOptions, Update
 from telegram.ext import CallbackContext, CommandHandler, ContextTypes
 
-from commands.subscription.common import NOTIFICATION_NAME_FORMAT
-from config import TIMEZONE
+from config import BACKEND_URL, TIMEZONE
 from isthereanydeal.giveaways import get_current_giveaways
 from isthereanydeal.utils import format_deals_list
 from utils import validate_allowed_chats_async
-from utils.get_next_time import get_next_time
 
 NOTIFICATION_TIME = datetime.time(9, 0, tzinfo=pytz.timezone(TIMEZONE))
-DAILY_INTERVAL = datetime.timedelta(minutes=1)
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +20,15 @@ logger = logging.getLogger(__name__)
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat is not None:
         chat_id = update.effective_chat.id
-        job_queue = context.job_queue
-        if job_queue is None:
-            logger.error("No job_queue found in context")
-            await context.bot.send_message(chat_id=chat_id, text="An error occurred, please try again later")
-            return
-
-        job_queue.run_repeating(
-            callback=_send_notification,
-            interval=DAILY_INTERVAL,
-            chat_id=chat_id,
-            first=get_next_time(NOTIFICATION_TIME),
-            name=NOTIFICATION_NAME_FORMAT.format(chat_id=chat_id),
+        response = requests.post(
+            f"{BACKEND_URL}/api/v1/subscriptions",
+            json={
+                "chat_id": chat_id,
+                "time": NOTIFICATION_TIME.isoformat(),
+            },
         )
+        response.raise_for_status()
+
         await context.bot.send_message(chat_id=chat_id, text="Subscribed to daily notifications successfully")
 
 

@@ -1,6 +1,7 @@
 import os
 
 ISTHEREANYDEAL_API_KEY: str = os.getenv("ISTHEREANYDEAL_API_KEY", "")
+TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
 DB_USER: str = os.getenv("DB_USER", "")
 DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
 DB_HOST: str = os.getenv("DB_HOST", "localhost")
