@@ -7,14 +7,20 @@ repos:
         args: [ --fix ]
       # Run the formatter.
       - id: ruff-format
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: local
     hooks:
-      - id: mypy
-        name: mypy (rest_api)
-        exclude: "telegram_bot|.*/migrations/.*"
-        additional_dependencies: [ "types-requests~=2.32", "types-pytz~=2025.2" ]
-      - id: mypy
-        name: mypy (telegram_bot)
-        exclude: "rest_api"
-        additional_dependencies: [ "types-requests~=2.32", "types-pytz~=2025.2" ]
+      - id: ty-rest-api
+        name: ty (rest_api)
+        entry: bash -c 'cd rest_api && uv run ty check .'
+        language: system
+        pass_filenames: false
+        files: "^rest_api/.*\\.py$"
+        exclude: ".*/migrations/.*"
+        types: [python]
+      - id: ty-telegram-bot
+        name: ty (telegram_bot)
+        entry: bash -c 'cd telegram_bot && uv run ty check .'
+        language: system
+        pass_filenames: false
+        files: "^telegram_bot/.*\\.py$"
+        types: [python]

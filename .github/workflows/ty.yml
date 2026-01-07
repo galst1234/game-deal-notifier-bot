@@ -1,4 +1,4 @@
-name: Mypy
+name: Ty
 
 on: [ push, pull_request ]
 
@@ -20,8 +20,9 @@ jobs:
             rest_api:
               - 'rest_api/**'
 
-  mypy-telegram-bot:
+  ty-telegram-bot:
     runs-on: ubuntu-latest
+    needs: changes
     if: needs.changes.outputs.telegram_bot == 'true'
     steps:
       - name: Checkout code
@@ -33,12 +34,13 @@ jobs:
           enable-cache: true
           pyproject-file: 'telegram_bot/pyproject.toml'
 
-      - name: Mypy
+      - name: Ty
         working-directory: telegram_bot
-        run: uv run --frozen mypy .
+        run: uv run --frozen ty check .
 
-  mypy-rest-api:
+  ty-rest-api:
     runs-on: ubuntu-latest
+    needs: changes
     if: needs.changes.outputs.rest_api == 'true'
     steps:
       - name: Checkout code
@@ -50,6 +52,6 @@ jobs:
           enable-cache: true
           pyproject-file: 'rest_api/pyproject.toml'
 
-      - name: Mypy
+      - name: Ty
         working-directory: rest_api
-        run: uv run --frozen mypy .
+        run: uv run --frozen ty check .
