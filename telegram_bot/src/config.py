@@ -5,3 +5,4 @@ TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
 ISTHEREANYDEAL_API_KEY: str = os.getenv("ISTHEREANYDEAL_API_KEY", "")
 
 BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
+TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
