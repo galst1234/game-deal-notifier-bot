@@ -1,0 +1,24 @@
+services:
+  rest_api:
+    build:
+      context: ./rest_api
+      dockerfile: Dockerfile
+    container_name: game-deal-notifier-api
+    env_file:
+      - ./rest_api/.env
+    ports:
+      - "8100:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  telegram_bot:
+    build:
+      context: ./telegram_bot
+      dockerfile: Dockerfile
+    container_name: game-deal-notifier-bot
+    env_file:
+      - ./telegram_bot/.env
+    environment:
+      - BACKEND_URL=http://rest_api:8000
+    depends_on:
+      - rest_api
