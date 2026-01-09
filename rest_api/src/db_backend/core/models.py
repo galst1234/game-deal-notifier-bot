@@ -13,6 +13,7 @@ class AllowedChat(Model):
 
 class NotificationSubscription(Model):
     chat = OneToOneField(AllowedChat, on_delete=CASCADE, null=False)
+    chat_id: int  # Type hint for auto-generated FK field
     notification_time = TimeField(null=False)
     enabled = BooleanField(default=True, null=False)
 

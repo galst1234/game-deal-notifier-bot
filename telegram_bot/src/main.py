@@ -24,12 +24,13 @@ def main() -> None:
     application.add_handler(unknown_handler)
 
     # Job queue
-    application.job_queue.run_repeating(
-        callback=subscriptions_job,
-        interval=datetime.timedelta(seconds=30),
-        first=0,
-        name="subscriptions_job",
-    )
+    if application.job_queue is not None:
+        application.job_queue.run_repeating(
+            callback=subscriptions_job,
+            interval=datetime.timedelta(seconds=30),
+            first=0,
+            name="subscriptions_job",
+        )
 
     application.run_polling()
 

@@ -11,8 +11,8 @@ from api.isthereanydeal.giveaways import get_current_giveaways
 
 setup_django()
 
-from django.db import transaction  # noqa
-from core.models import AllowedChat, NotificationSubscription, Job  # noqa
+from core.models import AllowedChat, Job, NotificationSubscription  # noqa: E402
+from django.db import transaction  # noqa: E402
 
 
 def _check_chat_exists(chat_id: int) -> bool:

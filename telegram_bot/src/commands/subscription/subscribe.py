@@ -20,6 +20,9 @@ CONVERSATION_STATE_ASKING_TIME = 0
 
 @validate_allowed_chats_async
 async def subscribe_start(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message is None:
+        return ConversationHandler.END
+
     await update.message.reply_text(
         "What time should I send your daily notifications?\n"
         "Enter time in 24-hour format (HH:MM)\n"
@@ -39,6 +42,9 @@ def _convert_to_utc_time(local_time: time) -> time:
 
 
 async def receive_time(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message is None or update.message.text is None:
+        return ConversationHandler.END
+
     user_input = update.message.text.strip()
     match = TIME_PATTERN.match(user_input)
     if not match:
@@ -77,14 +83,17 @@ async def receive_time(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def cancel(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message is None:
+        return ConversationHandler.END
+
     await update.message.reply_text("Subscription cancelled.")
     return ConversationHandler.END
 
 
 subscribe_handler = ConversationHandler(
     entry_points=[CommandHandler("subscribe", subscribe_start)],
-    states={
+    states={  # type: ignore[arg-type]
         CONVERSATION_STATE_ASKING_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_time)],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[CommandHandler("cancel", cancel)],  # type: ignore[arg-type]
 )
