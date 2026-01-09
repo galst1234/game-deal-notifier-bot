@@ -1,0 +1,42 @@
+name: Telegram Bot
+
+on:
+  push:
+    paths:
+      - 'telegram_bot/**'
+      - '.github/workflows/telegram-bot.yml'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - 'telegram_bot/**'
+      - '.github/workflows/telegram-bot.yml'
+      - '.github/actions/**'
+  workflow_dispatch:
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Ruff
+        uses: ./.github/actions/ruff-check
+        with:
+          project-dir: telegram_bot
+
+  ty:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
+        with:
+          project-dir: telegram_bot
+
+      - name: Run Ty
+        uses: ./.github/actions/ty-check
+        with:
+          project-dir: telegram_bot
