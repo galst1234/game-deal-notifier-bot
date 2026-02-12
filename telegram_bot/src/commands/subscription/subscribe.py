@@ -5,8 +5,15 @@ from datetime import time
 from zoneinfo import ZoneInfo
 
 import requests
-from telegram import Update
-from telegram.ext import CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 
 from config import BACKEND_URL, TIMEZONE
 from utils import validate_allowed_chats_async
@@ -18,10 +25,10 @@ TIME_PATTERN = re.compile(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$")
 CONVERSATION_STATE_ASKING_TIME = 0
 CONVERSATION_STATE_ASKING_TYPE = 1
 
-SUBSCRIPTION_TYPES: dict[str, tuple[str, str]] = {
-    "1": ("new_notify_empty", "New only (notify when none)"),
-    "2": ("new_silent_empty", "New only (silent when none)"),
-    "3": ("all", "All giveaways every time"),
+SUBSCRIPTION_TYPE_LABELS: dict[str, str] = {
+    "new_notify_empty": "New only (notify when none)",
+    "new_silent_empty": "New only (silent when none)",
+    "all": "All giveaways every time",
 }
 
 
@@ -68,30 +75,30 @@ async def receive_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         context.user_data["subscribe_utc_time"] = utc_time.isoformat()
         context.user_data["subscribe_local_time"] = local_time.strftime("%H:%M")
 
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("New only (notify when none)", callback_data="new_notify_empty")],
+        [InlineKeyboardButton("New only (silent when none)", callback_data="new_silent_empty")],
+        [InlineKeyboardButton("All giveaways every time", callback_data="all")],
+    ])
     await update.message.reply_text(
-        "What type of subscription would you like?\n\n"
-        "1. New only (notify when none) - Only new giveaways; sends 'nothing new' if none\n"
-        "2. New only (silent when none) - Only new giveaways; no message if none\n"
-        "3. All giveaways - Show all current giveaways every time\n\n"
-        "Reply with 1, 2, or 3.\n"
-        "Send /cancel to cancel.",
+        "What type of subscription would you like?",
+        reply_markup=keyboard,
     )
     return CONVERSATION_STATE_ASKING_TYPE
 
 
 async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.message is None or update.message.text is None or update.effective_chat is None:
+    query = update.callback_query
+    if query is None or query.data is None or update.effective_chat is None:
         return ConversationHandler.END
 
-    choice = update.message.text.strip()
-    if choice not in SUBSCRIPTION_TYPES:
-        await update.message.reply_text("Invalid choice. Please reply with 1, 2, or 3.")
-        return CONVERSATION_STATE_ASKING_TYPE
+    await query.answer()
 
-    sub_type_value, sub_type_label = SUBSCRIPTION_TYPES[choice]
+    sub_type_value = query.data
+    sub_type_label = SUBSCRIPTION_TYPE_LABELS.get(sub_type_value, sub_type_value)
 
     if context.user_data is None:
-        await update.message.reply_text("Something went wrong. Please try again with /subscribe.")
+        await query.edit_message_text("Something went wrong. Please try again with /subscribe.")
         return ConversationHandler.END
 
     utc_time: str = context.user_data.get("subscribe_utc_time", "")
@@ -109,12 +116,12 @@ async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         )
         response.raise_for_status()
 
-        await update.message.reply_text(
+        await query.edit_message_text(
             f"Subscribed successfully!\n\nTime: {local_time} daily\nType: {sub_type_label}",
         )
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to subscribe: {e}")
-        await update.message.reply_text("Failed to subscribe. Please try again later.")
+        await query.edit_message_text("Failed to subscribe. Please try again later.")
 
     return ConversationHandler.END
 
@@ -131,7 +138,7 @@ subscribe_handler = ConversationHandler(
     entry_points=[CommandHandler("subscribe", subscribe_start)],
     states={  # type: ignore[arg-type]
         CONVERSATION_STATE_ASKING_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_time)],
-        CONVERSATION_STATE_ASKING_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type)],
+        CONVERSATION_STATE_ASKING_TYPE: [CallbackQueryHandler(receive_type)],
     },
     fallbacks=[CommandHandler("cancel", cancel)],  # type: ignore[arg-type]
 )
