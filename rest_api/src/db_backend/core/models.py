@@ -1,19 +1,31 @@
 from typing import ClassVar
 
-from django.db.models import CASCADE, BigIntegerField, Index, Model, OneToOneField, Q
+from django.db.models import CASCADE, BigIntegerField, Index, Model, OneToOneField, Q, TextChoices
 from django.db.models.fields import BooleanField, CharField, DateTimeField, TimeField
 
 
-class AllowedChat(Model):
+class Chat(Model):
+    class Status(TextChoices):
+        PENDING = "pending", "Pending Approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
     chat_id = BigIntegerField(unique=True, primary_key=True)
     name = CharField(max_length=255, blank=True)
+    is_admin = BooleanField(default=False, null=False)
+    status = CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        null=False,
+    )
 
     def __str__(self) -> str:
         return f"AllowedChat(chat_id={self.chat_id}, name='{self.name}')"
 
 
 class NotificationSubscription(Model):
-    chat = OneToOneField(AllowedChat, on_delete=CASCADE, null=False)
+    chat = OneToOneField(Chat, on_delete=CASCADE, null=False)
     chat_id: int  # Type hint for auto-generated FK field
     notification_time = TimeField(null=False)
     enabled = BooleanField(default=True, null=False)

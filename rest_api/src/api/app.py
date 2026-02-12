@@ -11,14 +11,8 @@ from api.isthereanydeal.giveaways import get_current_giveaways
 
 setup_django()
 
-from core.models import AllowedChat, Job, NotificationSubscription  # noqa: E402
+from core.models import Chat, Job, NotificationSubscription  # noqa: E402
 from django.db import transaction  # noqa: E402
-
-
-def _check_chat_exists(chat_id: int) -> bool:
-    """Helper function to check if chat exists (must be called from sync context)."""
-    return AllowedChat.objects.filter(chat_id=chat_id).exists()
-
 
 app = FastAPI()
 
@@ -38,9 +32,13 @@ class AllowedChatResponse(BaseModel):
     is_allowed: bool
 
 
+def _is_chat_allowed(chat_id: int) -> bool:
+    return Chat.objects.filter(chat_id=chat_id, status=Chat.Status.APPROVED).exists()
+
+
 @app.get("/api/v1/allowed-chats/{chat_id}")
 async def check_allowed_chat(chat_id: int) -> AllowedChatResponse:
-    is_allowed = await sync_to_async(_check_chat_exists, thread_sensitive=False)(
+    is_allowed = await sync_to_async(_is_chat_allowed, thread_sensitive=False)(
         chat_id,
     )
     return AllowedChatResponse(chat_id=chat_id, is_allowed=is_allowed)
