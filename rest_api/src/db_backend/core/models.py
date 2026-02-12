@@ -6,9 +6,10 @@ from django.db.models.fields import BooleanField, CharField, DateTimeField, Time
 
 class AllowedChat(Model):
     chat_id = BigIntegerField(unique=True, primary_key=True)
+    name = CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
-        return f"AllowedChat(chat_id={self.chat_id})"
+        return f"AllowedChat(chat_id={self.chat_id}, name='{self.name}')"
 
 
 class NotificationSubscription(Model):
