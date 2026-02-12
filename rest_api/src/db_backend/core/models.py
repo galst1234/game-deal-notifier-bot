@@ -1,7 +1,8 @@
 from typing import ClassVar
 
+from django.contrib.postgres.fields import ArrayField
 from django.db.models import CASCADE, BigIntegerField, Index, Model, OneToOneField, Q, TextChoices
-from django.db.models.fields import BooleanField, CharField, DateTimeField, TimeField
+from django.db.models.fields import BooleanField, CharField, DateTimeField, TimeField, UUIDField
 
 
 class Chat(Model):
@@ -25,10 +26,22 @@ class Chat(Model):
 
 
 class NotificationSubscription(Model):
+    class SubscriptionType(TextChoices):
+        ALL = "all", "All Giveaways"
+        NEW_NOTIFY_EMPTY = "new_notify_empty", "New Only (Notify When Empty)"
+        NEW_SILENT_EMPTY = "new_silent_empty", "New Only (Silent When Empty)"
+
     chat = OneToOneField(Chat, on_delete=CASCADE, null=False)
     chat_id: int  # Type hint for auto-generated FK field
     notification_time = TimeField(null=False)
     enabled = BooleanField(default=True, null=False)
+    subscription_type = CharField(
+        max_length=20,
+        choices=SubscriptionType.choices,
+        default=SubscriptionType.NEW_NOTIFY_EMPTY,
+        null=False,
+    )
+    last_seen_game_ids = ArrayField(UUIDField(), default=list, blank=True)
 
     class Meta:
         indexes: ClassVar[list[Index]] = [

@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 TIME_PATTERN = re.compile(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$")
 
 CONVERSATION_STATE_ASKING_TIME = 0
+CONVERSATION_STATE_ASKING_TYPE = 1
+
+SUBSCRIPTION_TYPES: dict[str, tuple[str, str]] = {
+    "1": ("new_notify_empty", "New only (notify when none)"),
+    "2": ("new_silent_empty", "New only (silent when none)"),
+    "3": ("all", "All giveaways every time"),
+}
 
 
 @validate_allowed_chats_async
@@ -41,7 +48,7 @@ def _convert_to_utc_time(local_time: time) -> time:
     return utc_time
 
 
-async def receive_time(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
+async def receive_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message is None or update.message.text is None:
         return ConversationHandler.END
 
@@ -55,29 +62,59 @@ async def receive_time(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
 
     hours, minutes = int(match.group(1)), int(match.group(2))
     local_time = datetime.time(hours, minutes)
-
     utc_time = _convert_to_utc_time(local_time)
 
-    if update.effective_chat is not None:
-        chat_id = update.effective_chat.id
-        try:
-            response = requests.post(
-                f"{BACKEND_URL}/api/v1/subscriptions",
-                json={
-                    "chat_id": chat_id,
-                    "time": utc_time.isoformat(),
-                },
-            )
-            response.raise_for_status()
+    if context.user_data is not None:
+        context.user_data["subscribe_utc_time"] = utc_time.isoformat()
+        context.user_data["subscribe_local_time"] = local_time.strftime("%H:%M")
 
-            await update.message.reply_text(
-                f"Subscribed successfully!\n\n"
-                f"You'll receive daily notifications at {local_time.strftime('%H:%M')} local time.",
-            )
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to subscribe: {e}")
-            await update.message.reply_text("Failed to subscribe. Please try again later.")
-            return ConversationHandler.END
+    await update.message.reply_text(
+        "What type of subscription would you like?\n\n"
+        "1. New only (notify when none) - Only new giveaways; sends 'nothing new' if none\n"
+        "2. New only (silent when none) - Only new giveaways; no message if none\n"
+        "3. All giveaways - Show all current giveaways every time\n\n"
+        "Reply with 1, 2, or 3.\n"
+        "Send /cancel to cancel.",
+    )
+    return CONVERSATION_STATE_ASKING_TYPE
+
+
+async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message is None or update.message.text is None or update.effective_chat is None:
+        return ConversationHandler.END
+
+    choice = update.message.text.strip()
+    if choice not in SUBSCRIPTION_TYPES:
+        await update.message.reply_text("Invalid choice. Please reply with 1, 2, or 3.")
+        return CONVERSATION_STATE_ASKING_TYPE
+
+    sub_type_value, sub_type_label = SUBSCRIPTION_TYPES[choice]
+
+    if context.user_data is None:
+        await update.message.reply_text("Something went wrong. Please try again with /subscribe.")
+        return ConversationHandler.END
+
+    utc_time: str = context.user_data.get("subscribe_utc_time", "")
+    local_time: str = context.user_data.get("subscribe_local_time", "")
+    chat_id = update.effective_chat.id
+
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/api/v1/subscriptions",
+            json={
+                "chat_id": chat_id,
+                "time": utc_time,
+                "subscription_type": sub_type_value,
+            },
+        )
+        response.raise_for_status()
+
+        await update.message.reply_text(
+            f"Subscribed successfully!\n\nTime: {local_time} daily\nType: {sub_type_label}",
+        )
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to subscribe: {e}")
+        await update.message.reply_text("Failed to subscribe. Please try again later.")
 
     return ConversationHandler.END
 
@@ -94,6 +131,7 @@ subscribe_handler = ConversationHandler(
     entry_points=[CommandHandler("subscribe", subscribe_start)],
     states={  # type: ignore[arg-type]
         CONVERSATION_STATE_ASKING_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_time)],
+        CONVERSATION_STATE_ASKING_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type)],
     },
     fallbacks=[CommandHandler("cancel", cancel)],  # type: ignore[arg-type]
 )

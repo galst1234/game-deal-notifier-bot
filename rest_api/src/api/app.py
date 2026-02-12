@@ -1,4 +1,6 @@
 import datetime
+from enum import StrEnum
+from uuid import UUID
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
@@ -44,9 +46,16 @@ async def check_allowed_chat(chat_id: int) -> AllowedChatResponse:
     return AllowedChatResponse(chat_id=chat_id, is_allowed=is_allowed)
 
 
+class SubscriptionType(StrEnum):
+    ALL = "all"
+    NEW_NOTIFY_EMPTY = "new_notify_empty"
+    NEW_SILENT_EMPTY = "new_silent_empty"
+
+
 class SubscriptionRequest(BaseModel):
     chat_id: int
     time: datetime.time
+    subscription_type: SubscriptionType = SubscriptionType.NEW_NOTIFY_EMPTY
 
 
 @app.post("/api/v1/subscriptions")
@@ -54,7 +63,12 @@ async def subscribe_chat(body: SubscriptionRequest) -> Response:
     _, created = await sync_to_async(
         lambda: NotificationSubscription.objects.update_or_create(
             chat_id=body.chat_id,
-            defaults={"notification_time": body.time, "enabled": True},
+            defaults={
+                "notification_time": body.time,
+                "enabled": True,
+                "subscription_type": body.subscription_type.value,
+                "last_seen_game_ids": [],
+            },
         ),
     )()
     return Response(status_code=201 if created else 204)
@@ -68,7 +82,12 @@ async def unsubscribe_chat(chat_id: int) -> Response:
     return Response(status_code=204 if updated else 404)
 
 
-def _get_pending_subscriptions() -> list[int]:
+class PendingNotification(BaseModel):
+    chat_id: int
+    deals: list[DealItem]
+
+
+def _get_pending_subscriptions() -> list[NotificationSubscription]:
     with transaction.atomic():
         job, _ = Job.objects.get_or_create(name="subscriptions_job")
         last_run = job.last_run
@@ -76,25 +95,56 @@ def _get_pending_subscriptions() -> list[int]:
 
         if last_run.time() <= now.time():
             # Same day case: notification times between last_run and now
-            pending_subscriptions = NotificationSubscription.objects.filter(
-                notification_time__gt=last_run.time(),
-                notification_time__lte=now.time(),
-                enabled=True,
-            ).values_list("chat_id", flat=True)
+            pending_subscriptions = list(
+                NotificationSubscription.objects.filter(
+                    notification_time__gt=last_run.time(),
+                    notification_time__lte=now.time(),
+                    enabled=True,
+                ),
+            )
         else:
             # Day wrap-around: notification times after last_run OR before now
-            pending_subscriptions = (
-                NotificationSubscription.objects
-                .filter(enabled=True)
-                .filter(Q(notification_time__gt=last_run.time()) | Q(notification_time__lte=now.time()))
-                .values_list("chat_id", flat=True)
+            pending_subscriptions = list(
+                NotificationSubscription.objects.filter(enabled=True).filter(
+                    Q(notification_time__gt=last_run.time()) | Q(notification_time__lte=now.time()),
+                ),
             )
 
         job.last_run = now
         job.save()
-    return list(pending_subscriptions)
+    return pending_subscriptions
+
+
+def _build_pending_notifications(subscriptions: list[NotificationSubscription]) -> list[PendingNotification]:
+    giveaways = get_current_giveaways()
+    current_game_ids: list[UUID] = [deal.id for deal in giveaways]
+
+    notifications: list[PendingNotification] = []
+    for subscription in subscriptions:
+        if subscription.subscription_type == NotificationSubscription.SubscriptionType.ALL:
+            notifications.append(PendingNotification(chat_id=subscription.chat_id, deals=giveaways))
+        else:
+            last_seen: set[UUID] = set(subscription.last_seen_game_ids)
+            new_deals = [deal for deal in giveaways if deal.id not in last_seen]
+            if (
+                new_deals
+                or subscription.subscription_type == NotificationSubscription.SubscriptionType.NEW_NOTIFY_EMPTY
+            ):
+                notifications.append(PendingNotification(chat_id=subscription.chat_id, deals=new_deals))
+
+    sub_ids = [sub.pk for sub in subscriptions]
+    NotificationSubscription.objects.filter(pk__in=sub_ids).update(last_seen_game_ids=current_game_ids)
+
+    return notifications
+
+
+def _get_pending_notifications() -> list[PendingNotification]:
+    subscriptions = _get_pending_subscriptions()
+    if not subscriptions:
+        return []
+    return _build_pending_notifications(subscriptions)
 
 
 @app.get("/api/v1/notifications/pending")
-async def get_pending_notifications() -> list[int]:
-    return await sync_to_async(_get_pending_subscriptions)()
+async def get_pending_notifications() -> list[PendingNotification]:
+    return await sync_to_async(_get_pending_notifications)()
