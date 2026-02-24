@@ -10,15 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-import sys
 from pathlib import Path
 
-# Add the src directory to Python path so config can be imported from both contexts
-src_path = Path(__file__).resolve().parent.parent.parent
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
-from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER  # noqa: E402
+from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

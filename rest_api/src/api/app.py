@@ -3,18 +3,14 @@ from enum import StrEnum
 from uuid import UUID
 
 from asgiref.sync import sync_to_async
+from django.db import transaction
 from django.db.models import Q
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
 
-from api.django_setup import setup_django
 from api.isthereanydeal.deals_list import DealItem
 from api.isthereanydeal.giveaways import get_current_giveaways
-
-setup_django()
-
-from core.models import Chat, Job, NotificationSubscription  # noqa: E402
-from django.db import transaction  # noqa: E402
+from core.models import Chat, Job, NotificationSubscription
 
 app = FastAPI()
 

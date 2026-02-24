@@ -13,4 +13,4 @@ ADD . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-CMD ["uv", "run", "--frozen", "fastapi", "run", "src/api/app.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--frozen", "fastapi", "run", "src/main.py", "--host", "0.0.0.0", "--port", "8000"]
