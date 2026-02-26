@@ -89,22 +89,27 @@ def _get_pending_subscriptions() -> list[NotificationSubscription]:
         last_run = job.last_run
         now = datetime.datetime.now(tz=datetime.UTC)
 
-        if last_run.time() <= now.time():
-            # Same day case: notification times between last_run and now
-            pending_subscriptions = list(
-                NotificationSubscription.objects.filter(
-                    notification_time__gt=last_run.time(),
-                    notification_time__lte=now.time(),
-                    enabled=True,
-                ),
-            )
-        else:
+        pending_subscriptions = []
+        if last_run.date() == now.date():
+            if last_run.time() <= now.time():
+                # Same day case: notification times between last_run and now
+                pending_subscriptions = list(
+                    NotificationSubscription.objects.filter(
+                        notification_time__gt=last_run.time(),
+                        notification_time__lte=now.time(),
+                        enabled=True,
+                    ),
+                )
+        elif now.date() - last_run.date() == datetime.timedelta(days=1):
             # Day wrap-around: notification times after last_run OR before now
             pending_subscriptions = list(
                 NotificationSubscription.objects.filter(enabled=True).filter(
                     Q(notification_time__gt=last_run.time()) | Q(notification_time__lte=now.time()),
                 ),
             )
+        else:
+            # More than 1 day gap, consider all notifications pending
+            pending_subscriptions = list(NotificationSubscription.objects.filter(enabled=True))
 
         job.last_run = now
         job.save()
