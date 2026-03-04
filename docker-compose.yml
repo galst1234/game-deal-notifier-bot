@@ -4,6 +4,7 @@ services:
       context: ./rest_api
       dockerfile: Dockerfile
     container_name: game-deal-notifier-api
+    restart: always
     env_file:
       - ./rest_api/.env
     ports:
@@ -16,6 +17,7 @@ services:
       context: ./telegram_bot
       dockerfile: Dockerfile
     container_name: game-deal-notifier-bot
+    restart: always
     env_file:
       - ./telegram_bot/.env
     environment:
