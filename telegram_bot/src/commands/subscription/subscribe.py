@@ -1,8 +1,6 @@
 import datetime
 import logging
 import re
-from datetime import time
-from zoneinfo import ZoneInfo
 
 import requests
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -15,7 +13,7 @@ from telegram.ext import (
     filters,
 )
 
-from config import BACKEND_URL, TIMEZONE
+from config import BACKEND_URL
 from utils import validate_allowed_chats_async
 
 logger = logging.getLogger(__name__)
@@ -46,15 +44,6 @@ async def subscribe_start(update: Update, _: ContextTypes.DEFAULT_TYPE) -> int:
     return CONVERSATION_STATE_ASKING_TIME
 
 
-def _convert_to_utc_time(local_time: time) -> time:
-    local_tz = ZoneInfo(TIMEZONE)
-    today = datetime.date.today()
-    local_datetime = datetime.datetime.combine(today, local_time, tzinfo=local_tz)
-    utc_datetime = local_datetime.astimezone(datetime.UTC)
-    utc_time = utc_datetime.time()
-    return utc_time
-
-
 async def receive_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message is None or update.message.text is None:
         return ConversationHandler.END
@@ -69,10 +58,9 @@ async def receive_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     hours, minutes = int(match.group(1)), int(match.group(2))
     local_time = datetime.time(hours, minutes)
-    utc_time = _convert_to_utc_time(local_time)
 
     if context.user_data is not None:
-        context.user_data["subscribe_utc_time"] = utc_time.isoformat()
+        context.user_data["subscribe_utc_time"] = local_time.isoformat()
         context.user_data["subscribe_local_time"] = local_time.strftime("%H:%M")
 
     keyboard = InlineKeyboardMarkup([

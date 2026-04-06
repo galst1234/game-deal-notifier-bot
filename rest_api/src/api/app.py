@@ -1,6 +1,7 @@
 import datetime
 from enum import StrEnum
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from asgiref.sync import sync_to_async
 from django.db import transaction
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 
 from api.isthereanydeal.deals_list import DealItem
 from api.isthereanydeal.giveaways import get_current_giveaways
+from config import TIMEZONE
 from core.models import Chat, Job, NotificationSubscription
 
 app = FastAPI()
@@ -89,22 +91,26 @@ def _get_pending_subscriptions() -> list[NotificationSubscription]:
         last_run = job.last_run
         now = datetime.datetime.now(tz=datetime.UTC)
 
+        local_tz = ZoneInfo(TIMEZONE)
+        now_local = now.astimezone(local_tz)
+        last_run_local = last_run.astimezone(local_tz)
+
         pending_subscriptions = []
-        if last_run.date() == now.date():
-            if last_run.time() <= now.time():
-                # Same day case: notification times between last_run and now
+        if last_run_local.date() == now_local.date():
+            if last_run_local.time() <= now_local.time():
+                # Same day case: notification times between last_run and now (in local time)
                 pending_subscriptions = list(
                     NotificationSubscription.objects.filter(
-                        notification_time__gt=last_run.time(),
-                        notification_time__lte=now.time(),
+                        notification_time__gt=last_run_local.time(),
+                        notification_time__lte=now_local.time(),
                         enabled=True,
                     ),
                 )
-        elif now.date() - last_run.date() == datetime.timedelta(days=1):
-            # Day wrap-around: notification times after last_run OR before now
+        elif now_local.date() - last_run_local.date() == datetime.timedelta(days=1):
+            # Day wrap-around: notification times after last_run OR before now (in local time)
             pending_subscriptions = list(
                 NotificationSubscription.objects.filter(enabled=True).filter(
-                    Q(notification_time__gt=last_run.time()) | Q(notification_time__lte=now.time()),
+                    Q(notification_time__gt=last_run_local.time()) | Q(notification_time__lte=now_local.time()),
                 ),
             )
         else:
