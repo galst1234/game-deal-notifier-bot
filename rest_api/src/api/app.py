@@ -3,6 +3,7 @@ from enum import StrEnum
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+import sentry_sdk
 from asgiref.sync import sync_to_async
 from django.db import transaction
 from django.db.models import Q
@@ -11,8 +12,16 @@ from pydantic import BaseModel
 
 from api.isthereanydeal.deals_list import DealItem
 from api.isthereanydeal.giveaways import get_current_giveaways
-from config import TIMEZONE
+from config import SENTRY_DSN, TIMEZONE
 from core.models import Chat, Job, NotificationSubscription
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    send_default_pii=True,
+    enable_logs=True,
+    traces_sample_rate=1.0,
+)
+
 
 app = FastAPI()
 

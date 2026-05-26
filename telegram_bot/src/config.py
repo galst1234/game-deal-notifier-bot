@@ -6,3 +6,4 @@ ISTHEREANYDEAL_API_KEY: str = os.getenv("ISTHEREANYDEAL_API_KEY", "")
 
 BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
 TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
+SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")

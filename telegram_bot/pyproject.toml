@@ -3,16 +3,17 @@ name = "telegram_bot"
 version = "0.1.0"
 description = "Telegram bot for game deal notifications"
 authors = [
-    {name = "galst1234", email = "12615933+galst1234@users.noreply.github.com"},
+    { name = "galst1234", email = "12615933+galst1234@users.noreply.github.com" },
 ]
 dependencies = [
     "pydantic~=2.12",
     "python-telegram-bot[job-queue]~=22.5",
     "requests~=2.32",
+    "sentry-sdk~=2.60",
 ]
 requires-python = ">=3.13"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
 
 [dependency-groups]

@@ -1,13 +1,21 @@
 import datetime
 import logging
 
+import sentry_sdk
 from telegram.ext import ApplicationBuilder
 
 from commands import current_giveaways_handler, start_handler, unknown_handler
 from commands.subscription import subscribe_handler, subscriptions_job, unsubscribe_handler
-from config import TELEGRAM_BOT_TOKEN
+from config import SENTRY_DSN, TELEGRAM_BOT_TOKEN
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    send_default_pii=True,
+    enable_logs=True,
+    traces_sample_rate=1.0,
+)
 
 
 def main() -> None:
