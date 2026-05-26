@@ -39,6 +39,7 @@ class Deal(BaseModel):
 class ItemType(Enum):
     DLC = "dlc"
     GAME = "game"
+    PACKAGE = "package"
 
 
 class DealItem(BaseModel):
