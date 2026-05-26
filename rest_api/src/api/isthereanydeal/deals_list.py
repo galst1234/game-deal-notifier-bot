@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 from api.utils.pagination import PaginatedResult
-from config import ISTHEREANYDEAL_API_KEY
+from config import ISTHEREANYDEAL_API_KEY, ISTHEREANYDEAL_COUNTRY
 
 
 class Assets(BaseModel):
@@ -51,7 +51,7 @@ class DealItem(BaseModel):
 
 
 def build_deals_url(offset: int = 0) -> str:
-    return f"https://api.isthereanydeal.com/deals/v2?sort=price&offset={offset}&key={ISTHEREANYDEAL_API_KEY}"
+    return f"https://api.isthereanydeal.com/deals/v2?sort=price&country={ISTHEREANYDEAL_COUNTRY}&offset={offset}&key={ISTHEREANYDEAL_API_KEY}"
 
 
 class IsThereAnyDealDealsList(PaginatedResult[DealItem]):

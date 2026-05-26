@@ -1,6 +1,7 @@
 import os
 
 ISTHEREANYDEAL_API_KEY: str = os.getenv("ISTHEREANYDEAL_API_KEY", "")
+ISTHEREANYDEAL_COUNTRY: str = os.getenv("ISTHEREANYDEAL_COUNTRY", "")
 SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
 TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
 DB_USER: str = os.getenv("DB_USER", "")
